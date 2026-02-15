@@ -1,0 +1,4 @@
+comm: foo
+syscalls:
+  gettimeofday:
+    number: 96
