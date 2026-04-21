@@ -50,6 +50,8 @@ spec.yaml
 *.o
 main
 bootstrap-cli
+semsan-cli
 
 # Eval stuff
 target/
+build/

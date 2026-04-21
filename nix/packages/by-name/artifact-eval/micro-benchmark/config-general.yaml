@@ -1,0 +1,4 @@
+comm: benchmark-general
+syscalls:
+  open:
+    number: 2

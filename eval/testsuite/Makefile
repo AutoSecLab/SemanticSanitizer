@@ -1,15 +1,20 @@
 CC ?= gcc
 CFLAGS ?= -Wall -Wextra -O2
+BUILDDIR ?= build
 
 SRCS := $(wildcard benchmark-*.c)
 BINS := $(SRCS:.c=)
+BUILD_BINS := $(addprefix $(BUILDDIR)/,$(BINS))
 
-all: $(BINS)
+all: $(BUILD_BINS)
 
-%: %.c benchmark.h
+$(BUILDDIR):
+	mkdir -p $@
+
+$(BUILDDIR)/%: %.c benchmark.h | $(BUILDDIR)
 	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f $(BINS)
+	rm -rf $(BUILDDIR)
 
 .PHONY: all clean
