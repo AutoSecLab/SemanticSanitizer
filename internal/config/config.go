@@ -12,7 +12,8 @@ const DefaultPath = "config.yaml"
 
 // SanitizerConfig holds the configuration for SemanticSanitizer.
 type SanitizerConfig struct {
-	// Comm is the name of the comm (i.e. executable) to sanitize for.
+	// Comm is the task comm to sanitize for. Linux task comm is limited to 15
+	// visible bytes plus a trailing NUL, so longer values are truncated.
 	Comm string `yaml:"comm"`
 	// BinaryPath is the file path of the executable to search for symbols.
 	// Only required for uprobes.

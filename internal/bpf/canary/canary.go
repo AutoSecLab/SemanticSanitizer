@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cilium/ebpf/link"
+	"github.com/msanft/SemanticSanitizer/internal/bpf"
 	"github.com/msanft/SemanticSanitizer/internal/config"
 	"golang.org/x/sys/unix"
 )
@@ -21,6 +22,10 @@ func Attach(conf *config.SanitizerConfig) ([]link.Link, error) {
 		return nil, fmt.Errorf("load canary objects: %w", err)
 	}
 	defer objs.Close()
+
+	if err := objs.canaryMaps.SemsanConfig.Put(uint32(0), bpf.EncodeComm(conf.Comm)); err != nil {
+		return nil, fmt.Errorf("put config: %w", err)
+	}
 
 	rules := make(map[uint32]canaryRule)
 	for sc, scConf := range conf.Canary {

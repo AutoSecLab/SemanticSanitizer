@@ -2,9 +2,9 @@ package syscallfilter
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/cilium/ebpf/link"
+	"github.com/msanft/SemanticSanitizer/internal/bpf"
 	"github.com/msanft/SemanticSanitizer/internal/config"
 )
 
@@ -17,9 +17,7 @@ func Attach(conf *config.SanitizerConfig) ([]link.Link, error) {
 	}
 	defer objs.Close()
 
-	// TODO: move this out of here
-	comm := []byte(conf.Comm + strings.Repeat("\x00", 16-len(conf.Comm)))
-	if err := objs.syscallfilterMaps.SemsanConfig.Put(uint32(0), comm); err != nil {
+	if err := objs.syscallfilterMaps.SemsanConfig.Put(uint32(0), bpf.EncodeComm(conf.Comm)); err != nil {
 		return nil, fmt.Errorf("put config: %w", err)
 	}
 
