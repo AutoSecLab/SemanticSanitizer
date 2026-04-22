@@ -1,4 +1,4 @@
 comm: benchmark-general
 syscalls:
-  gettimeofday:
-    number: 96
+  ptrace:
+    number: 101
