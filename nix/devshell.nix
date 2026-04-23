@@ -23,7 +23,7 @@ pkgs.mkShell {
     golangci-lint
     shfmt
     gofumpt
-    nixfmt-rfc-style
+    nixfmt
     nixd
 
     # Python for evaluation scripts.

@@ -6,8 +6,10 @@
 const char *filename = "test.txt";
 
 int work() {
-  int fd = open(filename, O_RDONLY, 0600);
+  char buf[10];
+  int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0600);
   close(fd);
+  unlink(filename);
   return 0;
 }
 

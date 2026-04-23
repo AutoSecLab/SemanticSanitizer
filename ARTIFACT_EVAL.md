@@ -75,10 +75,25 @@ in the paper:
 ```text
 Benchmark                    Med w/o SemSan      Med w/ SemSan     Overhead %
 ---------                   ---------------      -------------     ----------
-benchmark-general                3245004.00         3020300.00           6.92
-benchmark-symlinkmount            501148.00          494376.00           1.35
-benchmark-dirownership          36233952.00        36231305.00           0.01
-benchmark-canary                36235571.00        18829935.00          48.03
+benchmark-general                3229168.00         3032532.00           6.09
+benchmark-symlinkmount            499868.00          494137.00           1.15
+benchmark-dirownership          27593849.00        25398242.00           7.96
+benchmark-canary                 3228323.00         2956623.00           8.42
 ```
 
 ## Artifact 3: Macro-Benchmark
+
+Run the macro-benchmark with:
+
+```bash
+nix run .#artifact-eval.macro-benchmark
+```
+
+This may take around 1 hour.
+Once finished, you should be presented with a table similar to this:
+
+```text
+Benchmark            Med w/o SemSan      Med w/ SemSan     Overhead %
+pgbench                        2.14               2.23          -4.21
+apache                     44292.93           44907.80          -1.39
+```
