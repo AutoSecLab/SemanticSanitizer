@@ -20,8 +20,12 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          config.allowUnfree = true;
-
+          config = {
+            allowUnfree = true;
+            permittedInsecurePackages = [
+              "python-2.7.18.12"
+            ];
+          };
           overlays = [
             (_final: prev: (import ./nix/packages { inherit (prev) lib callPackage; }))
             (_final: prev: { lib = prev.lib // (import ./nix/lib { inherit (prev) lib callPackage; }); })
