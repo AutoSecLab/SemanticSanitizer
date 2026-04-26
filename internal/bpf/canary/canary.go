@@ -10,10 +10,19 @@ import (
 )
 
 const maxStringLen = 256
+const maxCanaryNeedleLen = 32
+
+const (
+	canaryMatchDirect uint32 = iota
+	canaryMatchStringArray
+)
 
 type canaryRule struct {
 	ArgIdx        uint32
-	DisallowedStr [maxStringLen]byte
+	MatchMode     uint32
+	NeedleLen     uint32
+	_             uint32
+	DisallowedStr [maxCanaryNeedleLen]byte
 }
 
 func Attach(conf *config.SanitizerConfig) ([]link.Link, error) {
@@ -33,12 +42,23 @@ func Attach(conf *config.SanitizerConfig) ([]link.Link, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get syscall number for %s: %w", sc, err)
 		}
+		if scConf.ArgIndex < 0 || scConf.ArgIndex > 5 {
+			return nil, fmt.Errorf("invalid arg index %d for %s", scConf.ArgIndex, sc)
+		}
+		if len(scConf.Substring) == 0 {
+			return nil, fmt.Errorf("substring for %s must not be empty", sc)
+		}
+		if len(scConf.Substring) > maxCanaryNeedleLen {
+			return nil, fmt.Errorf("substring for %s must be at most %d bytes", sc, maxCanaryNeedleLen)
+		}
 
-		var disallowedStr [maxStringLen]byte
+		var disallowedStr [maxCanaryNeedleLen]byte
 		copy(disallowedStr[:], scConf.Substring)
 
 		rule := canaryRule{
 			ArgIdx:        uint32(scConf.ArgIndex),
+			MatchMode:     matchModeForRule(sc, scConf.ArgIndex),
+			NeedleLen:     uint32(len(scConf.Substring)),
 			DisallowedStr: disallowedStr,
 		}
 
@@ -57,6 +77,21 @@ func Attach(conf *config.SanitizerConfig) ([]link.Link, error) {
 	}
 
 	return []link.Link{kp}, nil
+}
+
+func matchModeForRule(syscallName string, argIndex int) uint32 {
+	switch syscallName {
+	case "execve":
+		if argIndex == 1 || argIndex == 2 {
+			return canaryMatchStringArray
+		}
+	case "execveat":
+		if argIndex == 2 || argIndex == 3 {
+			return canaryMatchStringArray
+		}
+	}
+
+	return canaryMatchDirect
 }
 
 func getSyscallNumber(name string) (int, error) {

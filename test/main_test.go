@@ -141,31 +141,69 @@ func TestDirownership(t *testing.T) {
 }
 
 func TestCanary(t *testing.T) {
-	require := require.New(t)
-	assert := assert.New(t)
-
-	conf := &config.SanitizerConfig{
-		Canary: map[string]config.CanaryConfig{
-			"openat": {
-				ArgIndex:  1,
-				Substring: "canary",
+	t.Run("direct string arg", func(t *testing.T) {
+		conf := &config.SanitizerConfig{
+			Canary: map[string]config.CanaryConfig{
+				"openat": {
+					ArgIndex:  1,
+					Substring: "canary",
+				},
 			},
-		},
-	}
+		}
 
-	c := client.New(conf)
+		c := client.New(conf)
 
-	t.Run("benign", func(t *testing.T) {
-		c.Config.Comm = "benign"
-		completed, err := c.TestSanitizer(t, canary.BenignProgram)
-		require.NoError(err)
-		assert.True(completed)
+		t.Run("benign", func(t *testing.T) {
+			require := require.New(t)
+			assert := assert.New(t)
+
+			c.Config.Comm = "benign"
+			completed, err := c.TestSanitizer(t, canary.BenignProgram)
+			require.NoError(err)
+			assert.True(completed)
+		})
+
+		t.Run("trigger", func(t *testing.T) {
+			require := require.New(t)
+			assert := assert.New(t)
+
+			c.Config.Comm = "trigger"
+			completed, err := c.TestSanitizer(t, canary.TriggerProgram)
+			require.False(completed)
+			assert.ErrorContains(err, "signal: killed")
+		})
 	})
 
-	t.Run("trigger", func(t *testing.T) {
-		c.Config.Comm = "trigger"
-		completed, err := c.TestSanitizer(t, canary.TriggerProgram)
-		require.False(completed)
-		assert.ErrorContains(err, "signal: killed")
+	t.Run("execve argv string array", func(t *testing.T) {
+		conf := &config.SanitizerConfig{
+			Canary: map[string]config.CanaryConfig{
+				"execve": {
+					ArgIndex:  1,
+					Substring: "pwned",
+				},
+			},
+		}
+
+		c := client.New(conf)
+
+		t.Run("benign", func(t *testing.T) {
+			require := require.New(t)
+			assert := assert.New(t)
+
+			c.Config.Comm = "trigger"
+			completed, err := c.TestSanitizer(t, canary.BenignExecveProgram)
+			require.NoError(err)
+			assert.True(completed)
+		})
+
+		t.Run("trigger", func(t *testing.T) {
+			require := require.New(t)
+			assert := assert.New(t)
+
+			c.Config.Comm = "trigger"
+			completed, err := c.TestSanitizer(t, canary.TriggerExecveProgram)
+			require.False(completed)
+			assert.ErrorContains(err, "signal: killed")
+		})
 	})
 }
