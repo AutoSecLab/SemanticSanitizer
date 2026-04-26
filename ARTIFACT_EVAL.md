@@ -78,7 +78,17 @@ curl 'http://127.0.0.1:1234/?p=.git;a=blobdiff;f=*;hpb=--output=/tmp/pwned;hb=HE
 **Expected output:** In the SemSan output in the multiplexer, you should see:
 `[gitweb.cgi:2994615] Canary triggered: detected disallowed substring "pwned" in arg 1 of syscall execve`
 
-###
+### Local Privilege Escalation in Docker (Ref 41)
+
+TODO
+
+### Arbitrary File Truncation in Soft-Serve (Ref 54)
+
+TODO
+
+### Authorization Bypass in ViewVC (Ref 55)
+
+TODO
 
 ## RQ2: Detection Accuracy (Sec 7.2)
 

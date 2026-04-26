@@ -109,8 +109,8 @@ static __always_inline void semsan_copy_comm(char dst[TASK_COMM_LEN],
   }
 }
 
-static __always_inline void semsan_copy_name(
-    char dst[SEMSAN_EVENT_NAME_LEN], const char *src) {
+static __always_inline void semsan_copy_name(char dst[SEMSAN_EVENT_NAME_LEN],
+                                             const char *src) {
 #pragma unroll
   for (int i = 0; i < SEMSAN_EVENT_NAME_LEN; i++) {
     char c = src[i];
@@ -120,8 +120,8 @@ static __always_inline void semsan_copy_name(
   }
 }
 
-static __always_inline void semsan_copy_text(
-    char dst[SEMSAN_EVENT_TEXT_LEN], const char *src) {
+static __always_inline void semsan_copy_text(char dst[SEMSAN_EVENT_TEXT_LEN],
+                                             const char *src) {
 #pragma unroll
   for (int i = 0; i < SEMSAN_EVENT_TEXT_LEN; i++) {
     char c = src[i];
@@ -154,32 +154,32 @@ semsan_event_new(const char *sanitizer, const char *operation, __u32 action,
   return event;
 }
 
-static __always_inline void semsan_event_set_subject_kernel(
-    struct semsan_event *event, const char *src) {
+static __always_inline void
+semsan_event_set_subject_kernel(struct semsan_event *event, const char *src) {
   if (event == NULL || src == NULL)
     return;
 
   bpf_probe_read_kernel_str(event->subject, sizeof(event->subject), src);
 }
 
-static __always_inline void semsan_event_set_object_kernel(
-    struct semsan_event *event, const char *src) {
+static __always_inline void
+semsan_event_set_object_kernel(struct semsan_event *event, const char *src) {
   if (event == NULL || src == NULL)
     return;
 
   bpf_probe_read_kernel_str(event->object, sizeof(event->object), src);
 }
 
-static __always_inline void semsan_event_set_subject_user(
-    struct semsan_event *event, const char *src) {
+static __always_inline void
+semsan_event_set_subject_user(struct semsan_event *event, const char *src) {
   if (event == NULL || src == NULL)
     return;
 
   bpf_probe_read_user_str(event->subject, sizeof(event->subject), src);
 }
 
-static __always_inline void semsan_event_set_object_user(
-    struct semsan_event *event, const char *src) {
+static __always_inline void
+semsan_event_set_object_user(struct semsan_event *event, const char *src) {
   if (event == NULL || src == NULL)
     return;
 

@@ -1,9 +1,10 @@
-{ writeShellApplication
-, mprocs
-, replaceVars
-, lib
-, git
-, lighttpd
+{
+  writeShellApplication,
+  mprocs,
+  replaceVars,
+  lib,
+  git,
+  lighttpd,
 }:
 let
   # At this time, the Git version shipped with nixpkgs is not patched,

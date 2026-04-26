@@ -11,8 +11,7 @@ char __license[] SEC("license") = "Dual MIT/GPL";
 
 static __always_inline void emit_syscallfilter_event(__s32 syscall_id) {
   struct semsan_event *event = semsan_event_new(
-      "syscallfilter", "syscall", SEMSAN_EVENT_ACTION_FINDING, syscall_id,
-      -1);
+      "syscallfilter", "syscall", SEMSAN_EVENT_ACTION_FINDING, syscall_id, -1);
   if (event == NULL)
     return;
 

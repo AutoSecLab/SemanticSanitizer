@@ -74,7 +74,7 @@ struct {
   __uint(max_entries, 400);
 } canaries SEC(".maps");
 
-#define CANARY_CMP_AT(idx)                                                    \
+#define CANARY_CMP_AT(idx)                                                     \
   do {                                                                         \
     if (rule->needle_len > (idx) &&                                            \
         haystack[off + (idx)] != rule->disallowed_str[(idx)])                  \
@@ -174,9 +174,10 @@ static __noinline int canary_match_user_string(unsigned long arg_ptr,
   return canary_contains_substring(ctx);
 }
 
-static __noinline int canary_match_user_string_array(
-    unsigned long array_ptr, const struct canary_rule *rule,
-    struct canary_search_ctx *ctx) {
+static __noinline int
+canary_match_user_string_array(unsigned long array_ptr,
+                               const struct canary_rule *rule,
+                               struct canary_search_ctx *ctx) {
   if (array_ptr == 0)
     return 0;
 

@@ -10,8 +10,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const maxStringLen = 256
-const maxCanaryNeedleLen = 32
+const (
+	maxStringLen       = 256
+	maxCanaryNeedleLen = 32
+)
 
 const (
 	canaryMatchDirect uint32 = iota
