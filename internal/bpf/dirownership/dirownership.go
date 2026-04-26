@@ -3,20 +3,26 @@ package dirownership
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/cilium/ebpf/link"
+	bpfruntime "github.com/msanft/SemanticSanitizer/internal/bpf"
 	"github.com/msanft/SemanticSanitizer/internal/config"
 )
 
-func Attach(conf *config.SanitizerConfig) ([]link.Link, error) {
+func Attach(conf *config.SanitizerConfig) (*bpfruntime.Attachment, error) {
 	objs := dirownershipObjects{}
 	if err := loadDirownershipObjects(&objs, nil); err != nil {
 		return nil, fmt.Errorf("load dirownership objects: %w", err)
 	}
-	defer objs.Close()
 
-	var links []link.Link
+	closers := []io.Closer{&objs}
+	closeAll := func() {
+		for i := len(closers) - 1; i >= 0; i-- {
+			_ = closers[i].Close()
+		}
+	}
 
 	moveMountKprobe, err := link.Kprobe("do_move_mount", objs.UnsafeMoveMountWrapper, nil)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -25,32 +31,39 @@ func Attach(conf *config.SanitizerConfig) ([]link.Link, error) {
 			"Therefore, this failure is not treated as a fatal error", err)
 	}
 	if moveMountKprobe != nil {
-		links = append(links, moveMountKprobe)
+		closers = append(closers, moveMountKprobe)
 	}
 
 	rmdirKprobe, err := link.Kprobe("vfs_rmdir", objs.UnsafeRmdirWrapper, nil)
 	if err != nil {
+		closeAll()
 		return nil, fmt.Errorf("attach vfs_rmdir kprobe: %w", err)
 	}
-	links = append(links, rmdirKprobe)
+	closers = append(closers, rmdirKprobe)
 
 	chmodKprobe, err := link.Kprobe("chmod_common", objs.UnsafeChmodWrapper, nil)
 	if err != nil {
+		closeAll()
 		return nil, fmt.Errorf("attach chmod_common kprobe: %w", err)
 	}
-	links = append(links, chmodKprobe)
+	closers = append(closers, chmodKprobe)
 
 	chownKprobe, err := link.Kprobe("chown_common", objs.UnsafeChownWrapper, nil)
 	if err != nil {
+		closeAll()
 		return nil, fmt.Errorf("attach chown_common kprobe: %w", err)
 	}
-	links = append(links, chownKprobe)
+	closers = append(closers, chownKprobe)
 
 	bprmExecveKprobe, err := link.Kprobe("bprm_execve", objs.UnsafeExecveWrapper, nil)
 	if err != nil {
+		closeAll()
 		return nil, fmt.Errorf("attach bprm_execve kprobe: %w", err)
 	}
-	links = append(links, bprmExecveKprobe)
+	closers = append(closers, bprmExecveKprobe)
 
-	return links, nil
+	return &bpfruntime.Attachment{
+		EventMap: objs.dirownershipMaps.SemsanEvents,
+		Closers:  closers,
+	}, nil
 }

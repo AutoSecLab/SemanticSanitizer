@@ -1,4 +1,4 @@
-comm: git
+comm: gitweb.cgi
 canary:
   execve:
     argIndex: 1

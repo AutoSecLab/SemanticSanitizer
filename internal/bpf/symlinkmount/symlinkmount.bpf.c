@@ -13,6 +13,18 @@
 
 char __license[] SEC("license") = "Dual MIT/GPL";
 
+static __always_inline void emit_symlinkmount_event(const char *symlink,
+                                                    const char *target) {
+  struct semsan_event *event = semsan_event_new(
+      "symlinkmount", "mount", SEMSAN_EVENT_ACTION_FINDING, -1, -1);
+  if (event == NULL)
+    return;
+
+  semsan_copy_text(event->subject, symlink);
+  semsan_copy_text(event->object, target);
+  semsan_event_submit(event);
+}
+
 struct trace_event_sys_mount {
   unsigned short common_type;
   unsigned char common_flags;
@@ -55,7 +67,6 @@ struct {
 static __always_inline int trace_vfs_symlink_filter(struct context *sctx) {
   struct inode *dir = (struct inode *)sctx->args[1];
   struct dentry *dentry = (struct dentry *)sctx->args[2];
-  const char *oldname = (const char *)sctx->args[3];
 
   unsigned long i_ino;
   if (BPF_CORE_READ_INTO(&i_ino, dir, i_ino) < 0)
@@ -64,8 +75,6 @@ static __always_inline int trace_vfs_symlink_filter(struct context *sctx) {
   struct qstr d_name = {0};
   if (BPF_CORE_READ_INTO(&d_name, dentry, d_name) < 0)
     return 1;
-
-  bpf_printk("symlink: %s -> %s\n", oldname, d_name.name);
 
   symlink_event_t symlink_event = {
       .inode = i_ino,
@@ -108,9 +117,6 @@ static __always_inline int symlink_mount_filter(struct context *sctx) {
   bpf_probe_read_str(&dev_name_str, sizeof(dev_name_str),
                      (const char *)sctx->args[0]);
 
-  bpf_printk("last symlink: %s | mount target: %s\n", symlink_str,
-             dev_name_str);
-
   if (dev_name_str[0] == '\0')
     return 0; // dev_name is empty e.g.
 
@@ -118,6 +124,7 @@ static __always_inline int symlink_mount_filter(struct context *sctx) {
     return 0;
 
   // The last symlink is being mounted
+  emit_symlinkmount_event(symlink_str, dev_name_str);
   term_action();
 
   return 0;

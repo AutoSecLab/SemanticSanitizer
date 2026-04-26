@@ -7,7 +7,18 @@
 
 char __license[] SEC("license") = "Dual MIT/GPL";
 
+static __always_inline void emit_libcfilter_event(void) {
+  struct semsan_event *event = semsan_event_new(
+      "libcfilter", "libc", SEMSAN_EVENT_ACTION_FINDING, -1, -1);
+  if (event == NULL)
+    return;
+
+  semsan_copy_text(event->subject, "__gets_chk");
+  semsan_event_submit(event);
+}
+
 static __always_inline int libc_filter(struct context *sctx) {
+  emit_libcfilter_event();
   term_action();
 
   return 0;

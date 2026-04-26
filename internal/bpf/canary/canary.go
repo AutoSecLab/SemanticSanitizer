@@ -2,9 +2,10 @@ package canary
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/cilium/ebpf/link"
-	"github.com/msanft/SemanticSanitizer/internal/bpf"
+	bpfruntime "github.com/msanft/SemanticSanitizer/internal/bpf"
 	"github.com/msanft/SemanticSanitizer/internal/config"
 	"golang.org/x/sys/unix"
 )
@@ -25,14 +26,21 @@ type canaryRule struct {
 	DisallowedStr [maxCanaryNeedleLen]byte
 }
 
-func Attach(conf *config.SanitizerConfig) ([]link.Link, error) {
+func Attach(conf *config.SanitizerConfig) (*bpfruntime.Attachment, error) {
 	objs := canaryObjects{}
 	if err := loadCanaryObjects(&objs, nil); err != nil {
 		return nil, fmt.Errorf("load canary objects: %w", err)
 	}
-	defer objs.Close()
 
-	if err := objs.canaryMaps.SemsanConfig.Put(uint32(0), bpf.EncodeComm(conf.Comm)); err != nil {
+	closers := []io.Closer{&objs}
+	closeAll := func() {
+		for i := len(closers) - 1; i >= 0; i-- {
+			_ = closers[i].Close()
+		}
+	}
+
+	if err := objs.canaryMaps.SemsanConfig.Put(uint32(0), bpfruntime.EncodeComm(conf.Comm)); err != nil {
+		closeAll()
 		return nil, fmt.Errorf("put config: %w", err)
 	}
 
@@ -67,16 +75,22 @@ func Attach(conf *config.SanitizerConfig) ([]link.Link, error) {
 
 	for syscallNum, rule := range rules {
 		if err := objs.canaryMaps.Canaries.Put(syscallNum, rule); err != nil {
+			closeAll()
 			return nil, fmt.Errorf("put canary rules for syscall %d: %w", syscallNum, err)
 		}
 	}
 
 	kp, err := link.Tracepoint("raw_syscalls", "sys_enter", objs.CanaryFilterWrapper, nil)
 	if err != nil {
+		closeAll()
 		return nil, fmt.Errorf("attach to tracepoint: %w", err)
 	}
+	closers = append(closers, kp)
 
-	return []link.Link{kp}, nil
+	return &bpfruntime.Attachment{
+		EventMap: objs.canaryMaps.SemsanEvents,
+		Closers:  closers,
+	}, nil
 }
 
 func matchModeForRule(syscallName string, argIndex int) uint32 {

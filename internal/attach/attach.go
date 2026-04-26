@@ -3,38 +3,54 @@ package attach
 import (
 	"context"
 	"fmt"
+	"os"
 
-	"github.com/cilium/ebpf/link"
+	bpfruntime "github.com/msanft/SemanticSanitizer/internal/bpf"
 	"github.com/msanft/SemanticSanitizer/internal/bpf/canary"
 	"github.com/msanft/SemanticSanitizer/internal/bpf/dirownership"
 	"github.com/msanft/SemanticSanitizer/internal/bpf/libcfilter"
 	"github.com/msanft/SemanticSanitizer/internal/bpf/symlinkmount"
 	"github.com/msanft/SemanticSanitizer/internal/bpf/syscallfilter"
 	"github.com/msanft/SemanticSanitizer/internal/config"
+	"github.com/msanft/SemanticSanitizer/internal/event"
 )
 
 // AttachFunc is a function that attaches a BPF program to some place.
-type AttachFunc func(conf *config.SanitizerConfig) ([]link.Link, error)
+type AttachFunc func(conf *config.SanitizerConfig) (*bpfruntime.Attachment, error)
 
 // AttachContext attaches the given attach functions to the system.
 // It blocks until the context is done.
 // For asynchronous users, it sends a signal on the allRunning channel
 // when all functions are attached.
-func AttachContext(ctx context.Context, conf *config.SanitizerConfig, allRunning chan struct{}) error {
+func AttachContext(ctx context.Context, conf *config.SanitizerConfig, allRunning chan struct{}, onEvent func(event.Event)) error {
 	attachFuncs := attachFuncsFromConfig(conf)
 	if len(attachFuncs) == 0 {
 		return fmt.Errorf("no attach functions found for config: %+v", conf)
 	}
 
+	attachments := make([]*bpfruntime.Attachment, 0, len(attachFuncs))
+	defer func() {
+		for i := len(attachments) - 1; i >= 0; i-- {
+			_ = attachments[i].Close()
+		}
+	}()
+
 	for name, fn := range attachFuncs {
 		fmt.Printf("Attaching %s...\n", name)
-		links, err := fn(conf)
+		attachment, err := fn(conf)
 		if err != nil {
 			return fmt.Errorf("attach function %s: %w", name, err)
 		}
-		for _, link := range links {
-			defer link.Close()
+
+		stream, err := event.NewStream(attachment.EventMap, onEvent, func(err error) {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", name, err)
+		})
+		if err != nil {
+			_ = attachment.Close()
+			return fmt.Errorf("create event stream for %s: %w", name, err)
 		}
+		attachment.Closers = append(attachment.Closers, stream)
+		attachments = append(attachments, attachment)
 	}
 
 	// Notify that the attach process is done.

@@ -5,6 +5,10 @@
 #define CONFIG_COMM_KEY 0
 #define MAX_ARGSTRING_LEN 256
 #define MAX_KERNEL_FUNC_LEN 64
+#define SEMSAN_EVENT_NAME_LEN 32
+#define SEMSAN_EVENT_TEXT_LEN 128
+
+#define SEMSAN_EVENT_ACTION_FINDING 1
 
 enum context_type {
   CTX_TYPE_SYSCALL = 0,
@@ -22,6 +26,29 @@ struct context {
 
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_core_read.h>
+
+#ifndef BPF_MAP_TYPE_RINGBUF
+#define BPF_MAP_TYPE_RINGBUF 27
+#endif
+
+struct semsan_event {
+  __u64 ts_ns;
+  __u32 pid;
+  __u32 tgid;
+  __s32 syscall_id;
+  __s32 arg_idx;
+  __u32 action;
+  char comm[TASK_COMM_LEN];
+  char sanitizer[SEMSAN_EVENT_NAME_LEN];
+  char operation[SEMSAN_EVENT_NAME_LEN];
+  char subject[SEMSAN_EVENT_TEXT_LEN];
+  char object[SEMSAN_EVENT_TEXT_LEN];
+};
+
+struct {
+  __uint(type, BPF_MAP_TYPE_RINGBUF);
+  __uint(max_entries, 1 << 24);
+} semsan_events SEC(".maps");
 
 #define INIT_SYSCALL_CTX(ctx_ptr, raw_ctx)                                     \
   do {                                                                         \
@@ -70,6 +97,104 @@ struct {
   __type(value, char[TASK_COMM_LEN]);
   __uint(max_entries, 1);
 } semsan_config SEC(".maps");
+
+static __always_inline void semsan_copy_comm(char dst[TASK_COMM_LEN],
+                                             const char *src) {
+#pragma unroll
+  for (int i = 0; i < TASK_COMM_LEN; i++) {
+    char c = src[i];
+    dst[i] = c;
+    if (c == '\0')
+      break;
+  }
+}
+
+static __always_inline void semsan_copy_name(
+    char dst[SEMSAN_EVENT_NAME_LEN], const char *src) {
+#pragma unroll
+  for (int i = 0; i < SEMSAN_EVENT_NAME_LEN; i++) {
+    char c = src[i];
+    dst[i] = c;
+    if (c == '\0')
+      break;
+  }
+}
+
+static __always_inline void semsan_copy_text(
+    char dst[SEMSAN_EVENT_TEXT_LEN], const char *src) {
+#pragma unroll
+  for (int i = 0; i < SEMSAN_EVENT_TEXT_LEN; i++) {
+    char c = src[i];
+    dst[i] = c;
+    if (c == '\0')
+      break;
+  }
+}
+
+static __always_inline struct semsan_event *
+semsan_event_new(const char *sanitizer, const char *operation, __u32 action,
+                 __s32 syscall_id, __s32 arg_idx) {
+  struct semsan_event *event =
+      bpf_ringbuf_reserve(&semsan_events, sizeof(*event), 0);
+  if (event == NULL)
+    return NULL;
+
+  __builtin_memset(event, 0, sizeof(*event));
+  event->ts_ns = bpf_ktime_get_ns();
+  __u64 pid_tgid = bpf_get_current_pid_tgid();
+  event->pid = (__u32)pid_tgid;
+  event->tgid = (__u32)(pid_tgid >> 32);
+  event->syscall_id = syscall_id;
+  event->arg_idx = arg_idx;
+  event->action = action;
+  bpf_get_current_comm(event->comm, sizeof(event->comm));
+  semsan_copy_name(event->sanitizer, sanitizer);
+  semsan_copy_name(event->operation, operation);
+
+  return event;
+}
+
+static __always_inline void semsan_event_set_subject_kernel(
+    struct semsan_event *event, const char *src) {
+  if (event == NULL || src == NULL)
+    return;
+
+  bpf_probe_read_kernel_str(event->subject, sizeof(event->subject), src);
+}
+
+static __always_inline void semsan_event_set_object_kernel(
+    struct semsan_event *event, const char *src) {
+  if (event == NULL || src == NULL)
+    return;
+
+  bpf_probe_read_kernel_str(event->object, sizeof(event->object), src);
+}
+
+static __always_inline void semsan_event_set_subject_user(
+    struct semsan_event *event, const char *src) {
+  if (event == NULL || src == NULL)
+    return;
+
+  bpf_probe_read_user_str(event->subject, sizeof(event->subject), src);
+}
+
+static __always_inline void semsan_event_set_object_user(
+    struct semsan_event *event, const char *src) {
+  if (event == NULL || src == NULL)
+    return;
+
+  bpf_probe_read_user_str(event->object, sizeof(event->object), src);
+}
+
+static __always_inline void semsan_event_submit(struct semsan_event *event) {
+  if (event != NULL)
+    bpf_ringbuf_submit(event, 0);
+}
+
+static __always_inline void semsan_event_discard(struct semsan_event *event) {
+  if (event != NULL)
+    bpf_ringbuf_discard(event, 0);
+}
 
 static __always_inline int _strncmp(const char *s1, const char *s2, int n) {
   for (int i = 0; i < n; i++) {

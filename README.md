@@ -85,12 +85,6 @@ Then, run SemanticSanitizer with:
 ./semsan-cli attach
 ```
 
-To also stream `bpf_printk` output into the CLI, run:
-
-```sh
-./semsan-cli attach --trace-pipe
-```
-
 ## How to Work on the Repository
 
 This section describes how to properly work with the code of

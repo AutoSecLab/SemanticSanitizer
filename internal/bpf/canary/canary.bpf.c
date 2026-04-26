@@ -38,6 +38,28 @@ struct canary_rule {
   char disallowed_str[MAX_CANARY_NEEDLE_LEN];
 };
 
+static __always_inline void copy_canary_needle(struct semsan_event *event,
+                                               const struct canary_rule *rule) {
+#pragma unroll
+  for (int i = 0; i < MAX_CANARY_NEEDLE_LEN; i++) {
+    if (i >= rule->needle_len)
+      break;
+    event->subject[i] = rule->disallowed_str[i];
+  }
+}
+
+static __always_inline void emit_canary_event(const struct canary_rule *rule,
+                                              __u32 syscall_id) {
+  struct semsan_event *event = semsan_event_new(
+      "canary", "syscall_arg_substring", SEMSAN_EVENT_ACTION_FINDING,
+      (__s32)syscall_id, (__s32)rule->arg_idx);
+  if (event == NULL)
+    return;
+
+  copy_canary_needle(event, rule);
+  semsan_event_submit(event);
+}
+
 struct canary_search_ctx {
   char haystack[MAX_ARGSTRING_LEN];
   int hay_len;
@@ -222,9 +244,7 @@ int canary_filter_wrapper(struct trace_event_raw_sys_enter *raw_ctx) {
   }
 
   if (matched) {
-    bpf_printk(
-        "canary: detected disallowed substring %s in arg %d of syscall %u\n",
-        rule->disallowed_str, rule->arg_idx, syscall_id);
+    emit_canary_event(rule, syscall_id);
     term_action();
   }
 

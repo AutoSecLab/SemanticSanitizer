@@ -25,7 +25,7 @@ func New(config *config.SanitizerConfig) *Client {
 // Attach executes the client.
 // It is meant to be run in a separate goroutine.
 func (c *Client) Attach(ctx context.Context, errChan chan error, allRunning chan struct{}) {
-	if err := attach.AttachContext(ctx, c.Config, allRunning); err != nil {
+	if err := attach.AttachContext(ctx, c.Config, allRunning, nil); err != nil {
 		errChan <- fmt.Errorf("attach sanitizer: %w", err)
 		return
 	}

@@ -13,6 +13,17 @@
 
 char __license[] SEC("license") = "Dual MIT/GPL";
 
+static __always_inline void emit_dirownership_event(const char *operation,
+                                                    const char *filename) {
+  struct semsan_event *event = semsan_event_new(
+      "dirownership", operation, SEMSAN_EVENT_ACTION_FINDING, -1, -1);
+  if (event == NULL)
+    return;
+
+  semsan_event_set_subject_kernel(event, filename);
+  semsan_event_submit(event);
+}
+
 static __always_inline unsigned char is_root() {
   __u64 gid_uid = bpf_get_current_uid_gid();
   __u32 uid = gid_uid & 0xFFFFFFFF;
@@ -36,10 +47,8 @@ static __always_inline unsigned char is_inode_root_owned(struct inode *inode) {
 
 static __always_inline char is_parent_root_owned(struct dentry *dentry) {
   struct inode *inode = BPF_CORE_READ(dentry, d_parent, d_inode);
-  if (inode == NULL) {
-    bpf_printk("could not get parent inode\n");
+  if (inode == NULL)
     return -22; // EINVAL
-  }
 
   return is_inode_root_owned(inode);
 }
@@ -53,7 +62,7 @@ static __always_inline int unsafe_move_mount_filter(struct context *sctx) {
   const unsigned char *filename = BPF_CORE_READ(dentry, d_name.name);
 
   if (is_parent_root_owned(dentry) == 0) {
-    bpf_printk("Unsafe mount move by root user: %s\n", filename);
+    emit_dirownership_event("move_mount", (const char *)filename);
     term_action();
   }
 
@@ -87,7 +96,7 @@ static __always_inline int unsafe_chmod_filter(struct context *sctx) {
   const unsigned char *filename = BPF_CORE_READ(dentry, d_name.name);
 
   if (is_parent_root_owned(dentry) == 0) {
-    bpf_printk("Unsafe chmod by root user: %s\n", filename);
+    emit_dirownership_event("chmod", (const char *)filename);
     term_action();
   }
 
@@ -116,7 +125,7 @@ static __always_inline int unsafe_chown_filter(struct context *sctx) {
   const unsigned char *filename = BPF_CORE_READ(dentry, d_name.name);
 
   if (is_parent_root_owned(dentry) == 0) {
-    bpf_printk("Unsafe chown by root user: %s\n", filename);
+    emit_dirownership_event("chown", (const char *)filename);
     term_action();
   }
 
@@ -147,7 +156,7 @@ static __always_inline int unsafe_rmdir_filter(struct context *sctx) {
   const unsigned char *filename = BPF_CORE_READ(d, d_name.name);
 
   if (is_inode_root_owned(dir_inode) == 0) {
-    bpf_printk("Unsafe rmdir by root user: %s\n", filename);
+    emit_dirownership_event("rmdir", (const char *)filename);
     term_action();
   }
 
@@ -188,7 +197,7 @@ static __always_inline int unsafe_execve_filter(struct context *sctx) {
   const char *filename = BPF_CORE_READ(b, filename);
 
   if (is_parent_root_owned(dentry) == 0) {
-    bpf_printk("Unsafe execve by root user: %s\n", filename);
+    emit_dirownership_event("execve", filename);
     term_action();
   }
 

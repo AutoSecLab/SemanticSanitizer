@@ -9,6 +9,16 @@ char __license[] SEC("license") = "Dual MIT/GPL";
 
 #define SYSCALL_DISALLOWED 1
 
+static __always_inline void emit_syscallfilter_event(__s32 syscall_id) {
+  struct semsan_event *event = semsan_event_new(
+      "syscallfilter", "syscall", SEMSAN_EVENT_ACTION_FINDING, syscall_id,
+      -1);
+  if (event == NULL)
+    return;
+
+  semsan_event_submit(event);
+}
+
 struct trace_event_raw_sys_enter {
   unsigned short common_type;
   unsigned char common_flags;
@@ -30,6 +40,7 @@ static __always_inline int syscall_filter(struct context *sctx) {
   if (ret == NULL || *ret != SYSCALL_DISALLOWED)
     return 1;
 
+  emit_syscallfilter_event((__s32)sctx->syscall_id);
   term_action();
 
   return 0;

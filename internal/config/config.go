@@ -33,15 +33,15 @@ type SanitizerConfig struct {
 // Syscalls holds the configuration for syscall sanitization.
 type SyscallConfig struct {
 	// Number specifies the syscall number.
-	Number int
+	Number int `yaml:"number"`
 }
 
 // CanaryConfig holds the configuration for a canary sanitization rule.
 type CanaryConfig struct {
 	// ArgIndex specifies the index of the syscall argument to check.
-	ArgIndex int
+	ArgIndex int `yaml:"argIndex"`
 	// Substring specifies the disallowed substring to check for.
-	Substring string
+	Substring string `yaml:"substring"`
 }
 
 // NewSanitizerConfig returns a new SanitizerConfig.
