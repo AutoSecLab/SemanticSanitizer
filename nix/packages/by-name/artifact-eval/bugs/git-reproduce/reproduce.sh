@@ -13,4 +13,4 @@ if [ ! -f "nix/packages/by-name/artifact-eval/micro-benchmark/config-general.yam
   exit 1
 fi
 
-sudo mprocs '@VULN@/bin/git instaweb' "${cli} attach --config @CONFIG@"
+sudo mprocs '@VULN@/bin/git instaweb' "${cli} attach --config @CONFIG@ --trace-pipe"

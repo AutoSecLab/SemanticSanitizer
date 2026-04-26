@@ -55,3 +55,4 @@ semsan-cli
 # Eval stuff
 target/
 build/
+mprocs.log

