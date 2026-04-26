@@ -33,4 +33,8 @@ pkgs.mkShell {
       ]
     ))
   ];
+
+  shellHook = ''
+    export TMPDIR=/tmp
+  '';
 }

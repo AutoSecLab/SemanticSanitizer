@@ -5,13 +5,13 @@ the sake of evaluation.
 
 ## Machine Configuration
 
-To replicate our experiment, rely on a machine with the following
+To replicate our artifacts, rely on a machine with the following
 specifications:
 
 - CPU Platform: AMD EPYC 9B45 (Turin) (x86_64)
 - CPU Cores: 4 CPU, 8 threads
 - Memory: 32 GB
-- OS: `**TODO** which os did you test it?`
+- OS: `#1 SMP PREEMPT_DYNAMIC Debian 6.1.158-1 (2025-11-09)` (`uname -v`)
 
 While the benchmark results *should* proportionally translate to other
 machines, *exact* reproducibility of the results is only likely on the
@@ -27,7 +27,7 @@ following sections of this document assume that a properly configured
 Nix installation is present as described in the
 [main README](../README.md).
 
-For an host machine based on Ubuntu, follow these commands:
+For a host machine based on Ubuntu, follow these commands:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
@@ -57,7 +57,7 @@ just build
 
 **TODO**: Here, reproduce the bugs you find for which you have a public ID
 (issue or CVE), at least those that are publically available. You can go for a
-fuzzing campaign, or simply re-play the PoC. 
+fuzzing campaign, or simply re-play the PoC.
 
 ## RQ2: Detection Accuracy (Sec 7.2)
 
@@ -80,19 +80,84 @@ with:
 just test
 ```
 
-**Expected output:** ``**TODO** :What should I see?``
+**Expected output:** Once finished, you should be presented with
+passing tests for all built-in sanitizer primitives:
+
+```text
+Running Integration Tests
+=== RUN   TestSyscallFilter/trigger
+Attaching syscallfilter...
+    client.go:45: all attached
+    client.go:51: running
+--- PASS: TestSyscallFilter (0.02s)
+    --- PASS: TestSyscallFilter/benign (0.02s)
+    --- PASS: TestSyscallFilter/trigger (0.00s)
+# ... omitted for brevity
+PASS
+```
 
 ### System Level Installation
+
+To detect potential false-positives, we employed SemSan in real-world
+machines (development workstations, servers) over the course of multiple
+months.
+
+After SemSan is built as outlined in the [main README](../README.md),
+it can be installed with the default, ["one-size-fits-all" config](../defaultConfig.yaml)
+through a systemd service. First, copy the binary and configuration to
+system-wide locations:
+
+```bash
+sudo install -Dm755 ./semsan-cli /usr/local/bin/semsan-cli
+sudo install -Dm644 ./defaultConfig.yaml /etc/semsan/config.yaml
 ```
-**TODO**: How can we install SemSan in the system to
-simulate general interaction? For this, we can't provide something that generate numbres, but I want to give the opportunity to try to tool freerly.
+
+Then create `/etc/systemd/system/semsan.service` with the following
+contents:
+
+```ini
+[Unit]
+Description=SemanticSanitizer
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/etc/semsan
+ExecStart=/usr/local/bin/semsan-cli attach --config /etc/semsan/config.yaml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
 ```
+
+This can then be enabled with:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now semsan.service
+```
+
+This causes SemSan to be started with the system until you choose
+disable it with an equivalent `systemctl disable` command.
+
+To confirm that SemSan is active, inspect the service state and logs:
+
+```bash
+sudo systemctl status semsan.service
+sudo journalctl -u semsan.service -f
+```
+
+**Expected output:** the journal should eventually contain `All sanitizers are
+running`, after which SemSan remains attached in the background until the
+service is stopped.
 
 ## RQ3: Performance Overhead (Sec 7.3)
 
 ### Micro-Benchmark
 
-Run the micro-benchmark with:
+From the repository root, run the micro-benchmark with:
 
 ```bash
 nix run .#artifact-eval.micro-benchmark
@@ -100,8 +165,8 @@ nix run .#artifact-eval.micro-benchmark
 
 This may take around 20 minutes.
 
-**Expected Output:** Once finished, you should be presented with a table similar
-to table 5 in the paper:
+**Expected Output:** Once finished, you should be presented with a
+table similar to table 5 in the paper:
 
 ```text
 Benchmark                    Med w/o SemSan      Med w/ SemSan     Overhead %
@@ -114,7 +179,7 @@ benchmark-canary                 3228323.00         2956623.00           8.42
 
 ### Macro-Benchmark
 
-Run the macro-benchmark with:
+From the repository root, run the macro-benchmark with:
 
 ```bash
 nix run .#artifact-eval.macro-benchmark

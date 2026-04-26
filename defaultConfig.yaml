@@ -1,0 +1,7 @@
+comm: '*'
+binaryPath: ""
+syscalls: {}
+dangerousLibc: true
+symlinkMount: true
+dirOwnership: true
+canary: {}
