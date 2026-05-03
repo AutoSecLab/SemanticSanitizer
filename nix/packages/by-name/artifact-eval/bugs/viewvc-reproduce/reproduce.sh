@@ -47,8 +47,12 @@ default_root = unprivileged
 template_dir = @VULN@/templates/default
 authorizer = forbiddenre
 
+[utilities]
+rcs_dir = @RCS@/bin
+diff = @DIFF@/bin/diff
+
 [authz-forbiddenre]
 forbiddenre = ^privileged(/|$)
 EOF
 
-sudo "$(command -v mprocs)" "@VULN@/bin/standalone.py -c ${config}" "${cli} attach --config @CONFIG@"
+sudo "$(command -v mprocs)" "@PYTHON@/bin/python @VULN@/bin/standalone.py -h 127.0.0.1 -p 49152 -c ${config}" "${cli} attach --config @CONFIG@"

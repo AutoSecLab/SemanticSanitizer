@@ -22,6 +22,7 @@ writeShellApplication {
   text = lib.readFile (
     replaceVars ./reproduce.sh {
       VULN = git-vuln;
+      LIGHTTPD = lighttpd;
       CONFIG = ./reproduce-config.yaml;
     }
   );

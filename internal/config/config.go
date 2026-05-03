@@ -26,6 +26,9 @@ type SanitizerConfig struct {
 	SymlinkMount bool `yaml:"symlinkMount"`
 	// DirOwnership enables sanitization of unsafe actions on directories.
 	DirOwnership bool `yaml:"dirOwnership"`
+	// DirOwnershipOpenNoFollow enables the higher-risk open/openat/openat2
+	// dirownership checks for writable opens without O_NOFOLLOW.
+	DirOwnershipOpenNoFollow bool `yaml:"dirOwnershipOpenNoFollow"`
 	// Canary enables sanitization based on syscall arguments.
 	Canary map[string]CanaryConfig `yaml:"canary"`
 }

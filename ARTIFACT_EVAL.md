@@ -106,9 +106,33 @@ Now, the attack can be launched:
 nix run .#artifact-eval.bugs.docker-reproduce
 ```
 
+This will open a multiplexer similar as for the reproduction case above.
+
+**Expected output:** In the SemSan output in the multiplexer, you should see:
+`[dockerd:986503] dirownership open_without_o_nofollow example`
+
 ### Arbitrary File Truncation in Soft-Serve (Ref 54)
 
-TODO
+To reproduce the arbitrary file truncation vulnerability in Soft-Serve, we first
+need to install the old, vulnerable version of Soft-Serve:
+
+```bash
+sudo ./aux/install-old-soft-serve.sh
+```
+
+Then, run the reproduction:
+
+```bash
+nix run .#artifact-eval.bugs.soft-serve-reproduce
+```
+
+This will open a terminal multiplexer with Soft-Serve v0.9.1, an attack script
+that creates an `icecream` repository and triggers the bug with
+`repo commit icecream -- --output=/tmp/pwned`, and SemSan with the
+[corresponding config](/nix/packages/by-name/artifact-eval/bugs/soft-serve-reproduce/reproduce-config.yaml).
+
+**Expected output:** In the SemSan output in the multiplexer, you should see:
+`[git:988393] Canary triggered: detected disallowed substring "pwned" in arg 1 of syscall openat`
 
 ### Authorization Bypass in ViewVC (Ref 55)
 
@@ -124,8 +148,13 @@ as well as SemSan with the [corresponding config](/nix/packages/by-name/artifact
 Request the following URL with cURL or a web browser to trigger the bug:
 
 ```bash
-curl 'http://localhost:49152/viewvc/unprivileged/..%2fprivileged/secret.txt'
+curl --max-time 10 --http0.9 'http://127.0.0.1:49152/viewvc/unprivileged/..%2fprivileged/secret.txt'
 ```
+
+Recent cURL versions reject the old response format emitted by this ViewVC
+standalone server unless `--http0.9` is passed. The request may time out after
+SemSan terminates the vulnerable helper process; this is fine as long as the
+SemSan finding below appears.
 
 **Expected output:** In the SemSan output in the multiplexer, you should see:
 `[rcs:3037580] Canary triggered: detected disallowed substring "secret.txt" in arg 1 of syscall openat`

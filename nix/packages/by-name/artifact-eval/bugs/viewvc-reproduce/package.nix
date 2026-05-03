@@ -29,6 +29,9 @@ writeShellApplication {
   text = lib.readFile (
     replaceVars ./reproduce.sh {
       VULN = viewvc-vuln;
+      PYTHON = python2;
+      RCS = rcs;
+      DIFF = diffutils;
       CONFIG = ./reproduce-config.yaml;
     }
   );
