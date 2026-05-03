@@ -26,4 +26,4 @@ while IFS= read -r pid; do
 done < <(sudo pgrep -f "$gitweb_dir" 2>/dev/null || true)
 sudo rm -rf "$gitweb_dir/lighttpd" "$gitweb_dir/httpd.conf" "$gitweb_dir/pid" >/dev/null 2>&1 || true
 
-sudo mprocs '@VULN@/bin/git instaweb' "${cli} attach --config @CONFIG@"
+sudo "$(command -v mprocs)" '@VULN@/bin/git instaweb' "${cli} attach --config @CONFIG@"

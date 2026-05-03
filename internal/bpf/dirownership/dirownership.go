@@ -24,6 +24,43 @@ func Attach(conf *config.SanitizerConfig) (*bpfruntime.Attachment, error) {
 		}
 	}
 
+	if err := objs.dirownershipMaps.SemsanConfig.Put(uint32(0), bpfruntime.EncodeComm(conf.Comm)); err != nil {
+		closeAll()
+		return nil, fmt.Errorf("put config: %w", err)
+	}
+
+	fileOpenKprobe, err := link.Kprobe("security_file_open", objs.UnsafeFileOpenWrapper, nil)
+	if err != nil {
+		closeAll()
+		return nil, fmt.Errorf("attach security_file_open kprobe: %w", err)
+	}
+	closers = append(closers, fileOpenKprobe)
+
+	openTracepoint, err := link.Tracepoint("syscalls", "sys_enter_open", objs.UnsafeOpenWrapper, nil)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		closeAll()
+		return nil, fmt.Errorf("attach sys_enter_open tracepoint: %w", err)
+	}
+	if openTracepoint != nil {
+		closers = append(closers, openTracepoint)
+	}
+
+	openatTracepoint, err := link.Tracepoint("syscalls", "sys_enter_openat", objs.UnsafeOpenatWrapper, nil)
+	if err != nil {
+		closeAll()
+		return nil, fmt.Errorf("attach sys_enter_openat tracepoint: %w", err)
+	}
+	closers = append(closers, openatTracepoint)
+
+	openat2Tracepoint, err := link.Tracepoint("syscalls", "sys_enter_openat2", objs.UnsafeOpenat2Wrapper, nil)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		closeAll()
+		return nil, fmt.Errorf("attach sys_enter_openat2 tracepoint: %w", err)
+	}
+	if openat2Tracepoint != nil {
+		closers = append(closers, openat2Tracepoint)
+	}
+
 	moveMountKprobe, err := link.Kprobe("do_move_mount", objs.UnsafeMoveMountWrapper, nil)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		fmt.Printf("Attaching do_move_mount kprobe failed: %s. "+

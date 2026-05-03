@@ -93,6 +93,19 @@ Then, configure the system and Docker accordingly:
 sudo ./aux/setup-vuln-docker.sh
 ```
 
+To reproduce the attack, first, the contents of `/tmp/example` (root-owned)
+can be verified:
+
+```bash
+sudo cat /tmp/example
+```
+
+Now, the attack can be launched:
+
+```bash
+nix run .#artifact-eval.bugs.docker-reproduce
+```
+
 ### Arbitrary File Truncation in Soft-Serve (Ref 54)
 
 TODO

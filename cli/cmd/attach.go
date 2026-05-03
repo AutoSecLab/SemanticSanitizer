@@ -35,7 +35,6 @@ func runAttach(cmd *cobra.Command, args []string) error {
 	}
 
 	allRunning := make(chan struct{})
-	defer close(allRunning)
 	go func() {
 		<-allRunning
 		fmt.Println("All sanitizers are running")

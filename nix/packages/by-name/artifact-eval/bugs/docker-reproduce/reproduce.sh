@@ -13,11 +13,4 @@ if [ ! -f "nix/packages/by-name/artifact-eval/micro-benchmark/config-general.yam
   exit 1
 fi
 
-dir="$(mktemp -d)"
-echo "Running campaign in temporary directory: ${dir}"
-cd "$dir"
-
-mkdir corpus
-cp @FUZZER@/share/corpus corpus/1
-
-sudo "$(command -v mprocs)" 'tail --retry --follow=name fuzzer_stats' '@FUZZER@/bin/forkserver_simple -g @FUZZER@/share/grammar.py @HARNESS@/bin/crun @@' "${cli} attach --config @CONFIG@"
+sudo "$(command -v mprocs)" 'sleep 2 && @CLOBBER@' 'sleep 2 && @ATTACK@' "${cli} attach --config @CONFIG@"

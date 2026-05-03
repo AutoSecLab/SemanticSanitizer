@@ -51,4 +51,4 @@ authorizer = forbiddenre
 forbiddenre = ^privileged(/|$)
 EOF
 
-sudo mprocs "@VULN@/bin/standalone.py -c ${config}" "${cli} attach --config @CONFIG@"
+sudo "$(command -v mprocs)" "@VULN@/bin/standalone.py -c ${config}" "${cli} attach --config @CONFIG@"
