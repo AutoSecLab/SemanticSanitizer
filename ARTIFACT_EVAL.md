@@ -83,7 +83,15 @@ curl 'http://127.0.0.1:1234/?p=.git;a=blobdiff;f=*;hpb=--output=/tmp/pwned;hb=HE
 To reproduce the LPE vulnerability in Docker, we first need to install the
 old, vulnerable version of Docker:
 
+```bash
+sudo ./aux/install-old-docker.sh
+```
 
+Then, configure the system and Docker accordingly:
+
+```bash
+sudo ./aux/setup-vuln-docker.sh
+```
 
 ### Arbitrary File Truncation in Soft-Serve (Ref 54)
 
