@@ -80,7 +80,10 @@ curl 'http://127.0.0.1:1234/?p=.git;a=blobdiff;f=*;hpb=--output=/tmp/pwned;hb=HE
 
 ### Local Privilege Escalation in Docker (Ref 41)
 
-TODO
+To reproduce the LPE vulnerability in Docker, we first need to install the
+old, vulnerable version of Docker:
+
+
 
 ### Arbitrary File Truncation in Soft-Serve (Ref 54)
 
