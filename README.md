@@ -1,11 +1,11 @@
+# SemanticSanitizer (SemSan)
+
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/llvm/llvm-project/blob/release/19.x/LICENSE.TXT)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20020040.svg)](https://doi.org/10.5281/zenodo.20020040)
 
-# Semantic Sanitizer (SemSan)
-
 This repo contains the code from our paper: `SemSan : a Configurable Sanitizer
 for Detecting System-Level Semantic Bugs` published in WOOT'26. Additonally, the
-complete artifact can be found on [Zenodo](https://zenodo.org/records/13687049),
+complete artifact can be found on [Zenodo](https://zenodo.org/records/20020040),
 [DOI:10.5281/zenodo.20020040](https://doi.org/10.5281/zenodo.20020040). To
 replicate our experiments, please check this [page](ARTIFACT_EVAL.md).
 
