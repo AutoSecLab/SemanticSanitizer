@@ -15,6 +15,10 @@ replicate our experiments, please check this [page](ARTIFACT_EVAL.md).
 
 ## Prerequisites
 
+- A reasonably recent Linux kernel. SemanticSanitizer relies on eBPF
+  features (including BTF and several BPF helpers) that are not all
+  present on older long-term-support kernels. We recommend **Linux 6.x
+  or newer**.
 - Nix installation with the `nix-command` and `flakes` features
   enabled. For the best installation experience, the [Determinate
   systems Nix Installer](https://docs.determinate.systems/determinate-nix/)

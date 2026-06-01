@@ -20,6 +20,29 @@ same configuration.
 In any case, an x86_64-Linux machine is required to reproduce the
 results.
 
+### Kernel
+
+SemSan relies on eBPF features (BTF and several BPF helpers) that are
+not all present on older kernels. A **Linux 6.x or newer** kernel is
+recommended. The Ubuntu 22.04 GA kernel (5.15) is known *not* to work:
+the Canary Sanitizer fails to load with an `invalid func unknown#181`
+verifier error. On Ubuntu 22.04, install the HWE kernel (6.8) and
+reboot before running the evaluation:
+
+```bash
+sudo apt-get install --install-recommends linux-generic-hwe-22.04
+sudo reboot
+```
+
+### WSL2
+
+On WSL2, the default locked-memory limit can be too low to load the BPF
+programs. Raise it in the shell you run SemSan / the tests from:
+
+```bash
+ulimit -l unlimited
+```
+
 ## Prerequisites
 
 For the dependencies, refer to the [main README](../README.md). The
@@ -287,6 +310,18 @@ nix run .#artifact-eval.macro-benchmark
 
 This may take around 1 hour.
 
+> [!NOTE]
+> The macro-benchmark runs each configuration `NUM_RUNS` (default: 9)
+> times and reports the median. On hosts with high I/O variance, most
+> commonly nested virtualization (e.g. a QEMU/KVM guest on a virtualized
+> disk), the Phoronix Test Suite may keep increasing the number of
+> trials per run, which inflates the wall-clock time considerably. If you
+> are time-constrained, lower the run count, for example:
+>
+> ```bash
+> NUM_RUNS=3 nix run .#artifact-eval.macro-benchmark
+> ```
+
 **Expected Output:** Once finished, you should be presented with a table similar
 to this:
 
@@ -340,4 +375,19 @@ The multiplexer can be navigated with both mouse and keyboard.
 [UserStats #0] run time: 10s, clients: 1, corpus: 80, objectives: 0, executions: 16288, exec/sec: 1.590k, shared_mem: 1368/11200 (12%)
 [Testcase #0] run time: 10s, clients: 1, corpus: 81, objectives: 0, executions: 16288, exec/sec: 1.590k, shared_mem: 1368/11200 (12%)
 [UserStats #0] run time: 10s, clients: 1, corpus: 81, objectives: 0, executions: 16305, exec/sec: 1.590k, shared_mem: 1368/11200 (12%)
+```
+
+## Troubleshooting
+
+### Nix flake fails on a downloaded snapshot (no `.git`)
+
+Nix flakes only see files that are tracked by Git. A Zenodo snapshot (or
+any tarball/ZIP download) does not contain the `.git` directory, so
+`nix develop` and `nix run` fail with errors about missing files.
+To address this, initialize a throwaway Git repository at the artifact
+root and stage all files before running any Nix command:
+
+```bash
+git init
+git add -A
 ```

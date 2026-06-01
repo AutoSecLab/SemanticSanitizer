@@ -3,6 +3,7 @@
 package main
 
 import (
+	"os"
 	"syscall"
 	"testing"
 
@@ -48,13 +49,20 @@ func TestSyscallFilter(t *testing.T) {
 }
 
 func TestLibcGets(t *testing.T) {
-	t.Skip("Skipping libc gets test until we can reliably pin libc versions.")
+	libcPath := os.Getenv("SEMSAN_TEST_LIBC")
+	if libcPath == "" {
+		t.Skip("SEMSAN_TEST_LIBC is not set; run the tests inside the Nix dev " +
+			"shell (`nix develop`) so the libc to scan is pinned. Skipping TestLibcGets.")
+	}
+	if _, err := os.Stat(libcPath); err != nil {
+		t.Skipf("Pinned libc %q from SEMSAN_TEST_LIBC is not accessible: %v. Skipping TestLibcGets.", libcPath, err)
+	}
 
 	require := require.New(t)
 	assert := assert.New(t)
 
 	conf := &config.SanitizerConfig{
-		BinaryPath:    "/nix/store/rmy663w9p7xb202rcln4jjzmvivznmz8-glibc-2.40-66/lib/libc.so.6",
+		BinaryPath:    libcPath,
 		DangerousLibc: true,
 	}
 

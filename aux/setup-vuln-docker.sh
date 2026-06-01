@@ -7,6 +7,14 @@ if [[ ${EUID} -ne 0 ]]; then
   exit 1
 fi
 
+if ! command -v docker >/dev/null 2>&1; then
+  echo "The 'docker' command was not found." >&2
+  echo "Install the vulnerable Docker version first with:" >&2
+  echo "  sudo ./aux/install-old-docker.sh" >&2
+  echo "and then re-run this script." >&2
+  exit 1
+fi
+
 DIAGNOSTIC_PORT="${DIAGNOSTIC_PORT:-8080}"
 STACKDUMP_DIR="${STACKDUMP_DIR:-/tmp/semsan-docker-tmp}"
 TARGET="${TARGET:-${STACKDUMP_DIR}/example}"

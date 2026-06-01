@@ -36,5 +36,6 @@ pkgs.mkShell {
 
   shellHook = ''
     export TMPDIR=/tmp
+    export SEMSAN_TEST_LIBC="${pkgs.glibc}/lib/libc.so.6"
   '';
 }
